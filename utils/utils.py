@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import time
 
 def get_option_chain_data():
     url = "https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY"
@@ -10,8 +11,8 @@ def get_option_chain_data():
         "Accept-Encoding": "gzip, deflate, br",
         "Accept": "application/json, text/plain, */*",
         "Referer": "https://www.nseindia.com/option-chain",
-        "Connection": "keep-alive",
-        "Origin": "https://www.nseindia.com"
+        "Origin": "https://www.nseindia.com",
+        "Connection": "keep-alive"
     }
 
     session = requests.Session()
@@ -19,14 +20,14 @@ def get_option_chain_data():
 
     homepage = "https://www.nseindia.com"
     try:
-        # Hit homepage first to get cookies
+        # Visit homepage to get cookies
         res = session.get(homepage, timeout=5)
         res.raise_for_status()
+        time.sleep(2)  # Pause to mimic human browsing
     except Exception as e:
         raise ValueError(f"Error accessing NSE homepage: {e}")
 
     try:
-        # Now get the option chain data with same session
         response = session.get(url, timeout=5)
         response.raise_for_status()
     except Exception as e:
@@ -59,8 +60,9 @@ def get_option_chain_data():
 
     return df_filtered, spot_price
 
+
 def analyze_oi(df, spot_price):
-    # Find top 2 supports (highest PE OI) below or near spot
+    # Top 2 supports (PE OI) and resistances (CE OI)
     supports = df[df['Strike'] <= spot_price].sort_values(by='PE_OI', ascending=False).head(2)['Strike'].tolist()
     if len(supports) < 2:
         below_spot = df[df['Strike'] <= spot_price]['Strike'].sort_values(ascending=False).tolist()
@@ -68,7 +70,6 @@ def analyze_oi(df, spot_price):
             if s not in supports and len(supports) < 2:
                 supports.append(s)
 
-    # Find top 2 resistances (highest CE OI) above or near spot
     resistances = df[df['Strike'] >= spot_price].sort_values(by='CE_OI', ascending=False).head(2)['Strike'].tolist()
     if len(resistances) < 2:
         above_spot = df[df['Strike'] >= spot_price]['Strike'].sort_values(ascending=True).tolist()
