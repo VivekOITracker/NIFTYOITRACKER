@@ -9,7 +9,9 @@ def get_option_chain_data():
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
         "Accept": "application/json, text/plain, */*",
-        "Referer": "https://www.nseindia.com/option-chain"
+        "Referer": "https://www.nseindia.com/option-chain",
+        "Connection": "keep-alive",
+        "Origin": "https://www.nseindia.com"
     }
 
     session = requests.Session()
@@ -19,15 +21,16 @@ def get_option_chain_data():
     try:
         # Hit homepage first to get cookies
         res = session.get(homepage, timeout=5)
-        if res.status_code != 200:
-            raise ValueError(f"Failed to get NSE homepage cookies, status: {res.status_code}")
+        res.raise_for_status()
     except Exception as e:
         raise ValueError(f"Error accessing NSE homepage: {e}")
 
-    # Now get the option chain data with the same session
-    response = session.get(url, timeout=5)
-    if response.status_code != 200:
-        raise ValueError(f"NSE API returned error status: {response.status_code}")
+    try:
+        # Now get the option chain data with same session
+        response = session.get(url, timeout=5)
+        response.raise_for_status()
+    except Exception as e:
+        raise ValueError(f"NSE API returned error status: {response.status_code} {e}")
 
     data = response.json()
 
